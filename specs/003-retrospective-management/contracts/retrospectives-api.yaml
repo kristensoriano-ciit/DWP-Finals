@@ -1,0 +1,438 @@
+openapi: 3.0.3
+info:
+  title: DWP Finals Retrospectives API
+  version: 1.0.0
+  description: Public published browsing and authenticated Author-owned retrospective management.
+  license:
+    name: Private educational project
+    url: https://choosealicense.com/no-permission/
+servers:
+  - url: /
+security:
+  - bearerAuth: []
+paths:
+  /api/retrospectives:
+    get:
+      tags: [Retrospectives]
+      summary: Browse published retrospectives
+      operationId: listPublishedRetrospectives
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/GameIdQuery'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Bounded page of published retrospectives
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedPublishedRetrospectivesResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Retrospectives]
+      summary: Create an Author-owned retrospective for an active Game
+      operationId: createRetrospective
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRetrospectiveRequest'
+      responses:
+        '201':
+          description: Retrospective created
+          headers:
+            Location:
+              description: Owner detail URL
+              schema: { type: string, format: uri-reference }
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrospectiveResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/AuthorRequiredError'
+  /api/retrospectives/{retrospectiveId}:
+    parameters:
+      - $ref: '#/components/parameters/RetrospectiveId'
+    get:
+      tags: [Retrospectives]
+      summary: Get a published retrospective
+      operationId: getPublishedRetrospective
+      security: []
+      responses:
+        '200':
+          description: Published retrospective
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishedRetrospectiveResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+    put:
+      tags: [Retrospectives]
+      summary: Update an owned non-archived retrospective using optimistic concurrency
+      operationId: updateRetrospective
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRetrospectiveRequest'
+      responses:
+        '200':
+          description: Retrospective updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrospectiveResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/OwnerForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+    delete:
+      tags: [Retrospectives]
+      summary: Permanently archive an owned retrospective
+      operationId: archiveRetrospective
+      parameters:
+        - $ref: '#/components/parameters/IfMatch'
+      responses:
+        '204':
+          description: Archived or already archived by this owner
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/OwnerForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /api/retrospectives/{retrospectiveId}/status:
+    parameters:
+      - $ref: '#/components/parameters/RetrospectiveId'
+    put:
+      tags: [Retrospectives]
+      summary: Change an owned retrospective's author-controlled status
+      operationId: changeRetrospectiveStatus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeRetrospectiveStatusRequest'
+      responses:
+        '200':
+          description: Status changed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrospectiveResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/OwnerForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /api/account/retrospectives:
+    get:
+      tags: [Account Retrospectives]
+      summary: List the current Author's non-archived retrospectives
+      operationId: listOwnRetrospectives
+      parameters:
+        - $ref: '#/components/parameters/Search'
+        - $ref: '#/components/parameters/GameIdQuery'
+        - $ref: '#/components/parameters/Status'
+        - $ref: '#/components/parameters/Sort'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/PageSize'
+      responses:
+        '200':
+          description: Bounded page of the Author's non-archived retrospectives
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedRetrospectivesResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/AuthorRequiredError'
+  /api/account/retrospectives/{retrospectiveId}:
+    parameters:
+      - $ref: '#/components/parameters/RetrospectiveId'
+    get:
+      tags: [Account Retrospectives]
+      summary: Get one current-Author non-archived retrospective
+      operationId: getOwnRetrospective
+      responses:
+        '200':
+          description: Owner-safe retrospective
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RetrospectiveResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/OwnerForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    RetrospectiveId:
+      name: retrospectiveId
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Search:
+      name: search
+      in: query
+      description: Case-insensitive partial match against title or review content.
+      schema: { type: string, maxLength: 200 }
+    GameIdQuery:
+      name: gameId
+      in: query
+      schema: { type: string, format: uuid }
+    Status:
+      name: status
+      in: query
+      schema:
+        $ref: '#/components/schemas/AuthorRetrospectiveStatus'
+    Sort:
+      name: sort
+      in: query
+      schema:
+        type: string
+        enum: [newest, best]
+        default: newest
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PageSize:
+      name: pageSize
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Quoted or unquoted Base64 rowversion from the latest owner response.
+      schema: { type: string, minLength: 1 }
+  responses:
+    ValidationError:
+      description: One or more request values are invalid
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblemDetails'
+    UnauthorizedError:
+      description: A valid active-user JWT is required
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    AuthorRequiredError:
+      description: The authenticated user does not have the Author role
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    OwnerForbiddenError:
+      description: The authenticated Author does not own this retrospective
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    NotFoundError:
+      description: The retrospective does not exist or is not visible through this route
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ConflictError:
+      description: The rowversion is stale or the retrospective is terminally archived
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  schemas:
+    AuthorRetrospectiveStatus:
+      type: string
+      enum: [draft, review, published, unpublished]
+    RetrospectiveStatus:
+      type: string
+      enum: [draft, review, published, unpublished, archived]
+    CreateRetrospectiveRequest:
+      type: object
+      required: [gameId, title, reviewContent, rating]
+      properties:
+        gameId: { type: string, format: uuid }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        reviewContent: { type: string, minLength: 1, maxLength: 20000 }
+        imageUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+          pattern: '^[Hh][Tt][Tt][Pp][Ss]?://'
+          description: Optional absolute HTTP or HTTPS URL; whitespace is trimmed before validation.
+          nullable: true
+        rating: { type: integer, minimum: 1, maximum: 10 }
+        status:
+          $ref: '#/components/schemas/AuthorRetrospectiveStatus'
+        unpublishedReason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          nullable: true
+    UpdateRetrospectiveRequest:
+      type: object
+      required: [gameId, title, reviewContent, rating, rowVersion]
+      properties:
+        gameId: { type: string, format: uuid }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        reviewContent: { type: string, minLength: 1, maxLength: 20000 }
+        imageUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+          pattern: '^[Hh][Tt][Tt][Pp][Ss]?://'
+          description: Optional absolute HTTP or HTTPS URL; whitespace is trimmed before validation.
+          nullable: true
+        rating: { type: integer, minimum: 1, maximum: 10 }
+        rowVersion: { type: string, format: byte, minLength: 1 }
+    ChangeRetrospectiveStatusRequest:
+      type: object
+      required: [status, rowVersion]
+      properties:
+        status:
+          $ref: '#/components/schemas/AuthorRetrospectiveStatus'
+        unpublishedReason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          nullable: true
+        rowVersion: { type: string, format: byte, minLength: 1 }
+    PublishedRetrospectiveResponse:
+      type: object
+      required:
+        - id
+        - gameId
+        - gameTitle
+        - authorUserId
+        - authorDisplayName
+        - title
+        - reviewContent
+        - rating
+        - publishedAtUtc
+      properties:
+        id: { type: string, format: uuid }
+        gameId: { type: string, format: uuid }
+        gameTitle: { type: string }
+        authorUserId: { type: string, format: uuid }
+        authorDisplayName: { type: string }
+        title: { type: string }
+        reviewContent: { type: string }
+        imageUrl: { type: string, format: uri, nullable: true }
+        rating: { type: integer, minimum: 1, maximum: 10 }
+        publishedAtUtc: { type: string, format: date-time }
+    RetrospectiveResponse:
+      allOf:
+        - type: object
+          required:
+            - id
+            - gameId
+            - gameTitle
+            - authorUserId
+            - authorDisplayName
+            - title
+            - reviewContent
+            - rating
+            - status
+            - createdAtUtc
+            - updatedAtUtc
+            - rowVersion
+          properties:
+            id: { type: string, format: uuid }
+            gameId: { type: string, format: uuid }
+            gameTitle: { type: string }
+            authorUserId: { type: string, format: uuid }
+            authorDisplayName: { type: string }
+            title: { type: string }
+            reviewContent: { type: string }
+            imageUrl: { type: string, format: uri, nullable: true }
+            rating: { type: integer, minimum: 1, maximum: 10 }
+            status:
+              $ref: '#/components/schemas/RetrospectiveStatus'
+            unpublishedReason: { type: string, nullable: true }
+            createdAtUtc: { type: string, format: date-time }
+            updatedAtUtc: { type: string, format: date-time }
+            publishedAtUtc: { type: string, format: date-time, nullable: true }
+            unpublishedAtUtc: { type: string, format: date-time, nullable: true }
+            archivedAtUtc: { type: string, format: date-time, nullable: true }
+            rowVersion: { type: string, format: byte }
+    PagedPublishedRetrospectivesResponse:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublishedRetrospectiveResponse'
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+        totalCount: { type: integer, minimum: 0 }
+    PagedRetrospectivesResponse:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/RetrospectiveResponse'
+        page: { type: integer, minimum: 1 }
+        pageSize: { type: integer, minimum: 1, maximum: 100 }
+        totalCount: { type: integer, minimum: 0 }
+    ProblemDetails:
+      type: object
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        traceId: { type: string }
+    ValidationProblemDetails:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items: { type: string }

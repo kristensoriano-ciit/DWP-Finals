@@ -1,0 +1,354 @@
+openapi: 3.0.3
+info:
+  title: DWP Finals Users API
+  version: 1.0.0
+  description: Backend contract for registration, authentication, profile maintenance, and user administration.
+  license:
+    name: Private educational project
+servers:
+  - url: /api
+paths:
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register an author account
+      operationId: registerUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Sign in with email and password
+      operationId: loginUser
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication succeeded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          description: Credentials are invalid or the account is inactive
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '429':
+          description: Too many sign-in attempts were received in the current rate-limit window
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+  /account/me:
+    get:
+      tags: [Account]
+      summary: Get the authenticated user's profile
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    put:
+      tags: [Account]
+      summary: Update the authenticated user's profile
+      operationId: updateCurrentUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+      responses:
+        '200':
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
+  /account/password:
+    put:
+      tags: [Account]
+      summary: Change the authenticated user's password
+      operationId: changeCurrentUserPassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+      responses:
+        '204':
+          description: Password changed
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /admin/users:
+    get:
+      tags: [Administration]
+      summary: List users in pages
+      operationId: listUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Paged users
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedUsersResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+  /admin/users/{userId}:
+    delete:
+      tags: [Administration]
+      summary: Deactivate a user account without deleting historical content
+      operationId: deactivateUser
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Account is inactive; repeated requests are idempotent
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          description: Administrator attempted to deactivate their own account
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  responses:
+    ValidationError:
+      description: One or more request values are invalid
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblemDetails'
+    UnauthorizedError:
+      description: Authentication is missing, invalid, expired, or belongs to an inactive account
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ForbiddenError:
+      description: The authenticated user does not have the required role
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ConflictError:
+      description: The requested change conflicts with existing account data
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    NotFoundError:
+      description: The requested account does not exist
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [displayName, email, password]
+      properties:
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 50
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+    UpdateProfileRequest:
+      type: object
+      required: [displayName, email]
+      properties:
+        displayName:
+          type: string
+          minLength: 2
+          maxLength: 50
+        email:
+          type: string
+          format: email
+    ChangePasswordRequest:
+      type: object
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          format: password
+        newPassword:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 128
+    UserResponse:
+      type: object
+      required: [id, displayName, email, role, isActive, createdAtUtc]
+      properties:
+        id:
+          type: string
+          format: uuid
+        displayName:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [Author, Admin]
+        isActive:
+          type: boolean
+        createdAtUtc:
+          type: string
+          format: date-time
+        deactivatedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+    AuthResponse:
+      type: object
+      required: [accessToken, expiresAtUtc, user]
+      properties:
+        accessToken:
+          type: string
+        expiresAtUtc:
+          type: string
+          format: date-time
+        user:
+          $ref: '#/components/schemas/UserResponse'
+    PagedUsersResponse:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserResponse'
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalCount:
+          type: integer
+          minimum: 0
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        traceId:
+          type: string
+    ValidationProblemDetails:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string

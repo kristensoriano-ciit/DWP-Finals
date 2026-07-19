@@ -1,0 +1,42 @@
+# .NET
+**/bin/
+**/obj/
+packages/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+.vs/
+TestResults/
+coverage/
+*.coverage
+
+# Local databases and secrets
+*.mdf
+*.ldf
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.*
+!.env.example
+appsettings.*.local.json
+
+# Node and frontend builds
+**/node_modules/
+**/dist/
+**/build/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+*.sw?
