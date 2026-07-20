@@ -4,21 +4,27 @@
 
 This repository uses `.opencode` as the local agent workflow surface.
 
-- `agents/` defines role behavior.
-- `skills/` defines domain rules and implementation preferences.
-- `command/` defines repeatable prompts for common work.
+- `.opencode/agents/` defines role behavior.
+- `.opencode/skills/` defines domain rules and implementation preferences.
+- `.opencode/commands/` defines repeatable prompts for common work.
 
 ## Repo Map
 
-- `apps/`
-  Workspace for application code. Keep feature work grouped by app.
+- `dotnet-backend/dotnet-backend/`
+  ASP.NET Core API, Entity Framework Core data access, and migrations.
+- `dotnet-backend/dotnet-backend.Tests/`
+  Backend service and migration-backed integration tests.
+- `react-frontend/`
+  React and Vite portal. Frontend tests are colocated under `src/`.
 - `docs/`
   Workspace for project documentation, architecture notes, and delivery checklists.
+- `specs/`
+  Feature specifications, plans, contracts, quickstarts, and task records.
 - `.opencode/agents/`
   Agent definitions used to shape how the assistant works in this repo.
 - `.opencode/skills/`
   Reusable implementation rules for stack-specific work.
-- `.opencode/command/`
+- `.opencode/commands/`
   Repeatable command prompts for planning and delivery.
 
 ## Active Agent
@@ -40,4 +46,4 @@ This repository uses `.opencode` as the local agent workflow surface.
 - Use the matching skill before writing code so patterns stay consistent.
 - Prefer simple code over clever abstractions.
 - When docs are missing, add or update material in `docs/` alongside code changes.
-- When a new app is added under `apps/`, document its purpose here and add any app-specific skills or commands if the workflow changes.
+- When a new application project is added, document its real path here and add any app-specific skills or commands if the workflow changes.

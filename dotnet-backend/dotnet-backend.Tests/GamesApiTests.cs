@@ -31,17 +31,27 @@ public sealed class GamesApiTests(UserApiFactory factory)
     }
 
     [Fact]
-    public async Task BrowseRequiresAuthenticationAndReturnsActiveGames()
+    public async Task AnonymousVisitorCanBrowseAndOpenOnlyActiveGames()
     {
-        await factory.CreateGameAsync("Visible Game", DateOnly.FromDateTime(DateTime.UtcNow));
-        var unauthorized = await _client.GetAsync("/api/games");
-        await AuthenticateAsync("author@example.com");
+        var activeGame = await factory.CreateGameAsync(
+            "Visible Game",
+            DateOnly.FromDateTime(DateTime.UtcNow));
+        var archivedGame = await factory.CreateGameAsync(
+            "Visible Archived Game",
+            DateOnly.FromDateTime(DateTime.UtcNow),
+            isActive: false);
+
         var response = await _client.GetAsync("/api/games?search=visible");
         var games = await response.Content.ReadFromJsonAsync<PagedGamesResponse>();
+        var detailResponse = await _client.GetAsync($"/api/games/{activeGame.Id}");
+        var detail = await detailResponse.Content.ReadFromJsonAsync<GameResponse>();
+        var archivedDetailResponse = await _client.GetAsync($"/api/games/{archivedGame.Id}");
 
-        Assert.Equal(HttpStatusCode.Unauthorized, unauthorized.StatusCode);
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
-        Assert.Single(games!.Items);
+        Assert.Collection(games!.Items, game => Assert.Equal(activeGame.Id, game.Id));
+        Assert.Equal(HttpStatusCode.OK, detailResponse.StatusCode);
+        Assert.Equal(activeGame.Id, detail!.Id);
+        Assert.Equal(HttpStatusCode.NotFound, archivedDetailResponse.StatusCode);
     }
 
     [Fact]
@@ -102,6 +112,27 @@ public sealed class GamesApiTests(UserApiFactory factory)
         Assert.Equal(HttpStatusCode.Forbidden, createResponse.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, updateResponse.StatusCode);
         Assert.Equal(HttpStatusCode.Forbidden, deleteResponse.StatusCode);
+    }
+
+    [Fact]
+    public async Task AnonymousVisitorCannotMutateGames()
+    {
+        var game = await factory.CreateGameAsync(
+            "Protected Game",
+            DateOnly.FromDateTime(DateTime.UtcNow));
+        var request = new CreateGameRequest
+        {
+            Title = "Unauthorized Game",
+            ReleaseDate = DateOnly.FromDateTime(DateTime.UtcNow)
+        };
+
+        var createResponse = await _client.PostAsJsonAsync("/api/games", request);
+        var updateResponse = await _client.PutAsJsonAsync($"/api/games/{game.Id}", request);
+        var deleteResponse = await _client.DeleteAsync($"/api/games/{game.Id}");
+
+        Assert.Equal(HttpStatusCode.Unauthorized, createResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, updateResponse.StatusCode);
+        Assert.Equal(HttpStatusCode.Unauthorized, deleteResponse.StatusCode);
     }
 
     private async Task AuthenticateAsync(string email)

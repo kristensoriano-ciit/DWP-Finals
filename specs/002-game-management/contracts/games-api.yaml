@@ -1,71 +1,301 @@
 openapi: 3.0.3
 info:
   title: DWP Finals Games API
-  version: 1.0.0
+  version: 1.1.0
+  description: >-
+    Authoritative game catalog contract. Feature 004 supersedes feature 002 only for game read
+    authorization: active-game list and detail operations are anonymous. Game mutations remain
+    bearer-protected and Admin-only. The feature 004 portal delta contract describes the same
+    public read behavior.
   license:
     name: Private educational project
+    url: https://choosealicense.com/no-permission/
 servers:
   - url: /
+tags:
+  - name: Games
+    description: Active-game discovery and Admin-only catalog management.
 paths:
   /api/games:
     get:
+      tags: [Games]
       summary: List active games
       operationId: listGames
-      security: [{ bearerAuth: [] }]
+      security: []
       parameters:
-        - { name: search, in: query, schema: { type: string } }
-        - { name: releaseWindow, in: query, schema: { type: string, enum: [all, new, upcoming] } }
-        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
-        - { name: pageSize, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - name: search
+          in: query
+          description: Case-insensitive partial title match.
+          schema:
+            type: string
+        - name: releaseWindow
+          in: query
+          schema:
+            type: string
+            enum: [all, new, upcoming]
+            default: all
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
       responses:
-        '200': { description: Paged active games }
-        '400': { description: Invalid query }
-        '401': { description: Authentication required }
+        '200':
+          description: Bounded page containing only active games.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PagedGamesResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
     post:
+      tags: [Games]
       summary: Create a game
       operationId: createGame
-      security: [{ bearerAuth: [] }]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateGameRequest'
       responses:
-        '201': { description: Game created }
-        '400': { description: Invalid game }
-        '401': { description: Authentication required }
-        '403': { description: Admin role required }
-        '409': { description: Duplicate normalized title and release date }
+        '201':
+          description: Game created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
   /api/games/{gameId}:
     parameters:
       - name: gameId
         in: path
         required: true
-        schema: { type: string, format: uuid }
+        schema:
+          type: string
+          format: uuid
     get:
+      tags: [Games]
       summary: Get an active game
       operationId: getGame
-      security: [{ bearerAuth: [] }]
+      security: []
       responses:
-        '200': { description: Active game }
-        '401': { description: Authentication required }
-        '404': { description: Game not found or archived }
+        '200':
+          description: Active game.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameResponse'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
     put:
+      tags: [Games]
       summary: Update a game
       operationId: updateGame
-      security: [{ bearerAuth: [] }]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateGameRequest'
       responses:
-        '200': { description: Game updated }
-        '400': { description: Invalid game }
-        '401': { description: Authentication required }
-        '403': { description: Admin role required }
-        '404': { description: Game not found }
-        '409': { description: Duplicate normalized title and release date }
+        '200':
+          description: Game updated.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
     delete:
+      tags: [Games]
       summary: Archive a game
       operationId: archiveGame
-      security: [{ bearerAuth: [] }]
+      security:
+        - bearerAuth: []
       responses:
-        '204': { description: Game archived; repeated requests are idempotent }
-        '401': { description: Authentication required }
-        '403': { description: Admin role required }
-        '404': { description: Game not found }
-        '409': { description: Game changed during archival }
+        '204':
+          description: Game archived; repeated requests are idempotent.
+        '401':
+          $ref: '#/components/responses/UnauthenticatedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          $ref: '#/components/responses/NotFoundError'
+        '409':
+          $ref: '#/components/responses/ConflictError'
 components:
   securitySchemes:
-    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CreateGameRequest:
+      type: object
+      required: [title, releaseDate]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+        releaseDate:
+          type: string
+          format: date
+        coverImageUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+          pattern: '^[Hh][Tt][Tt][Pp][Ss]?://'
+          nullable: true
+    UpdateGameRequest:
+      allOf:
+        - $ref: '#/components/schemas/CreateGameRequest'
+    GameResponse:
+      type: object
+      required:
+        - id
+        - title
+        - releaseDate
+        - isActive
+        - createdAtUtc
+        - updatedAtUtc
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 2000
+          nullable: true
+        releaseDate:
+          type: string
+          format: date
+        coverImageUrl:
+          type: string
+          format: uri
+          maxLength: 2048
+          nullable: true
+        isActive:
+          type: boolean
+          enum: [true]
+        createdAtUtc:
+          type: string
+          format: date-time
+        updatedAtUtc:
+          type: string
+          format: date-time
+        archivedAtUtc:
+          type: string
+          format: date-time
+          nullable: true
+    PagedGamesResponse:
+      type: object
+      required: [items, page, pageSize, totalCount]
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: '#/components/schemas/GameResponse'
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+          maximum: 100
+        totalCount:
+          type: integer
+          minimum: 0
+    ProblemDetails:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
+      additionalProperties: true
+    ValidationProblemDetails:
+      allOf:
+        - $ref: '#/components/schemas/ProblemDetails'
+        - type: object
+          properties:
+            errors:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+  responses:
+    ValidationError:
+      description: Request or query validation failed.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ValidationProblemDetails'
+    UnauthenticatedError:
+      description: Authentication is required.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ForbiddenError:
+      description: The authenticated user does not have the Admin role.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    NotFoundError:
+      description: The game does not exist or is archived.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    ConflictError:
+      description: The game conflicts with an existing game or changed during the operation.
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'

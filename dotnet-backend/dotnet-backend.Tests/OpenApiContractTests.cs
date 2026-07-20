@@ -53,7 +53,7 @@ public sealed class OpenApiContractTests(UserApiFactory factory)
         Assert.True(user.TryGetProperty("delete", out _));
         Assert.True(paths.TryGetProperty("/api/games", out var games));
         Assert.True(games.TryGetProperty("get", out var getGames));
-        Assert.True(getGames.GetProperty("security").GetArrayLength() > 0);
+        AssertAnonymous(getGames);
         var releaseWindowParameter = getGames.GetProperty("parameters")
             .EnumerateArray()
             .Single(parameter => parameter.GetProperty("name").GetString() == "releaseWindow");
@@ -74,7 +74,7 @@ public sealed class OpenApiContractTests(UserApiFactory factory)
                 .Select(value => value.GetString()));
         Assert.Contains("200", getGames.GetProperty("responses").EnumerateObject().Select(item => item.Name));
         Assert.Contains("400", getGames.GetProperty("responses").EnumerateObject().Select(item => item.Name));
-        Assert.Contains("401", getGames.GetProperty("responses").EnumerateObject().Select(item => item.Name));
+        Assert.DoesNotContain("401", getGames.GetProperty("responses").EnumerateObject().Select(item => item.Name));
         Assert.True(games.TryGetProperty("post", out var createGame));
         Assert.True(createGame.GetProperty("security").GetArrayLength() > 0);
         foreach (var status in new[] { "201", "400", "401", "403", "409" })
@@ -82,9 +82,15 @@ public sealed class OpenApiContractTests(UserApiFactory factory)
             Assert.True(createGame.GetProperty("responses").TryGetProperty(status, out _));
         }
         Assert.True(paths.TryGetProperty("/api/games/{gameId}", out var game));
-        Assert.True(game.TryGetProperty("get", out _));
-        Assert.True(game.TryGetProperty("put", out _));
-        Assert.True(game.TryGetProperty("delete", out _));
+        Assert.True(game.TryGetProperty("get", out var getGame));
+        Assert.True(game.TryGetProperty("put", out var updateGame));
+        Assert.True(game.TryGetProperty("delete", out var archiveGame));
+        AssertAnonymous(getGame);
+        Assert.DoesNotContain("401", getGame.GetProperty("responses").EnumerateObject().Select(item => item.Name));
+        foreach (var mutation in new[] { createGame, updateGame, archiveGame })
+        {
+            Assert.True(mutation.GetProperty("security").GetArrayLength() > 0);
+        }
         Assert.True(paths.TryGetProperty("/api/retrospectives", out var retrospectives));
         Assert.True(retrospectives.TryGetProperty("get", out var publishedList));
         Assert.True(retrospectives.TryGetProperty("post", out var createRetrospective));
@@ -179,6 +185,13 @@ public sealed class OpenApiContractTests(UserApiFactory factory)
         {
             Assert.True(responses.TryGetProperty(status, out _), $"Missing response {status}.");
         }
+    }
+
+    private static void AssertAnonymous(JsonElement operation)
+    {
+        Assert.True(
+            !operation.TryGetProperty("security", out var security) || security.GetArrayLength() == 0,
+            "Expected the operation to allow anonymous requests.");
     }
 
     private static void AssertContentConstraints(JsonDocument document, JsonElement schema)

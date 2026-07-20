@@ -1,6 +1,47 @@
-@dotnet_backend_HostAddress = http://localhost:5186
+@api = https://localhost:7047
+@email = <development-user-email>
+@password = <development-user-password>
+@gameId = 00000000-0000-0000-0000-000000000000
+@retrospectiveId = 00000000-0000-0000-0000-000000000000
 
-GET {{dotnet_backend_HostAddress}}/weatherforecast/
+### Public: browse active games
+GET {{api}}/api/games?search=&releaseWindow=all&page=1&pageSize=20
 Accept: application/json
 
-###
+### Public: read an active game (replace gameId)
+GET {{api}}/api/games/{{gameId}}
+Accept: application/json
+
+### Public: browse published retrospectives
+GET {{api}}/api/retrospectives?sort=newest&page=1&pageSize=20
+Accept: application/json
+
+### Public: read a published retrospective (replace retrospectiveId)
+GET {{api}}/api/retrospectives/{{retrospectiveId}}
+Accept: application/json
+
+### Authenticate (set local placeholders above; do not commit credentials)
+# @name login
+POST {{api}}/api/auth/login
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "{{email}}",
+  "password": "{{password}}"
+}
+
+### Authenticated: read the current account
+GET {{api}}/api/account/me
+Accept: application/json
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+### Authenticated Author: browse owned retrospectives
+GET {{api}}/api/account/retrospectives?sort=newest&page=1&pageSize=20
+Accept: application/json
+Authorization: Bearer {{login.response.body.$.accessToken}}
+
+### Authenticated Admin: browse users (login must be an Admin)
+GET {{api}}/api/admin/users?page=1&pageSize=20
+Accept: application/json
+Authorization: Bearer {{login.response.body.$.accessToken}}

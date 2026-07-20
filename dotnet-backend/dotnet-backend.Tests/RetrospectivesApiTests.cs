@@ -107,6 +107,24 @@ public sealed class RetrospectivesApiTests(UserApiFactory factory)
     }
 
     [Fact]
+    public async Task AuthorCollectionExcludesAnotherAuthorsRetrospectives()
+    {
+        var owned = await factory.CreateRetrospectiveAsync(
+            _owner.Id, _game.Id, "Owned collection review");
+        var other = await factory.CreateRetrospectiveAsync(
+            _other.Id, _game.Id, "Other collection review");
+        await AuthenticateAsync("owner@example.com");
+
+        using var response = await _client.GetAsync("/api/account/retrospectives");
+        var result = await response.Content.ReadFromJsonAsync<PagedRetrospectivesResponse>(JsonOptions);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.Equal(1, result!.TotalCount);
+        Assert.Equal(owned.Id, Assert.Single(result.Items).Id);
+        Assert.DoesNotContain(result.Items, retrospective => retrospective.Id == other.Id);
+    }
+
+    [Fact]
     public async Task PublicResponseDoesNotExposeOwnerOnlyOrIdentityInternalFields()
     {
         var entity = await factory.CreateRetrospectiveAsync(
@@ -125,7 +143,7 @@ public sealed class RetrospectivesApiTests(UserApiFactory factory)
     }
 
     [Fact]
-    public async Task OtherAuthorIsForbiddenFromEveryOwnerOperation()
+    public async Task OtherAuthorIsForbiddenFromEveryOwnerOperationWithoutContentDisclosure()
     {
         var entity = await factory.CreateRetrospectiveAsync(
             _owner.Id, _game.Id, "Protected review");
@@ -155,18 +173,89 @@ public sealed class RetrospectivesApiTests(UserApiFactory factory)
 
         Assert.All(new[] { ownDetail, update, status, archive },
             response => Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode));
+        await AssertProtectedContentNotDisclosedAsync(
+            entity, ownDetail, update, status, archive);
     }
 
     [Fact]
-    public async Task AdminCannotCreateOrUseAuthorOwnerRoutes()
+    public async Task AdminCannotOverrideAuthorOwnershipOrUseAuthorRoutes()
     {
+        var entity = await factory.CreateRetrospectiveAsync(
+            _owner.Id, _game.Id, "Admin protected review");
+        var token = Convert.ToBase64String(entity.RowVersion);
         await AuthenticateAsync("admin@example.com");
+
         using var create = await _client.PostAsJsonAsync(
             "/api/retrospectives", ValidCreate());
-        using var own = await _client.GetAsync("/api/account/retrospectives");
+        using var ownList = await _client.GetAsync("/api/account/retrospectives");
+        using var ownDetail = await _client.GetAsync($"/api/account/retrospectives/{entity.Id}");
+        using var update = await _client.PutAsJsonAsync($"/api/retrospectives/{entity.Id}",
+            new UpdateRetrospectiveRequest
+            {
+                GameId = _game.Id,
+                Title = "Admin attempt",
+                ReviewContent = "Admin attempt",
+                Rating = 5,
+                RowVersion = token
+            });
+        using var status = await _client.PutAsJsonAsync($"/api/retrospectives/{entity.Id}/status",
+            new ChangeRetrospectiveStatusRequest
+            {
+                Status = AuthorRetrospectiveStatus.Published,
+                RowVersion = token
+            });
+        using var archiveRequest = new HttpRequestMessage(
+            HttpMethod.Delete, $"/api/retrospectives/{entity.Id}");
+        archiveRequest.Headers.TryAddWithoutValidation("If-Match", $"\"{token}\"");
+        using var archive = await _client.SendAsync(archiveRequest);
 
-        Assert.Equal(HttpStatusCode.Forbidden, create.StatusCode);
-        Assert.Equal(HttpStatusCode.Forbidden, own.StatusCode);
+        Assert.All(new[] { create, ownList, ownDetail, update, status, archive },
+            response => Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode));
+        await AssertProtectedContentNotDisclosedAsync(
+            entity, ownDetail, update, status, archive);
+    }
+
+    [Fact]
+    public async Task DeactivationInvalidatesExistingTokenForEveryProtectedRetrospectiveRoute()
+    {
+        var entity = await factory.CreateRetrospectiveAsync(
+            _owner.Id, _game.Id, "Inactive protected review");
+        var token = Convert.ToBase64String(entity.RowVersion);
+        var ownerToken = await GetTokenAsync("owner@example.com");
+        await AuthenticateAsync("admin@example.com");
+        using var deactivate = await _client.DeleteAsync($"/api/admin/users/{_owner.Id}");
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", ownerToken);
+
+        using var ownList = await _client.GetAsync("/api/account/retrospectives");
+        using var ownDetail = await _client.GetAsync($"/api/account/retrospectives/{entity.Id}");
+        using var create = await _client.PostAsJsonAsync(
+            "/api/retrospectives", ValidCreate());
+        using var update = await _client.PutAsJsonAsync($"/api/retrospectives/{entity.Id}",
+            new UpdateRetrospectiveRequest
+            {
+                GameId = _game.Id,
+                Title = "Inactive attempt",
+                ReviewContent = "Inactive attempt",
+                Rating = 5,
+                RowVersion = token
+            });
+        using var status = await _client.PutAsJsonAsync($"/api/retrospectives/{entity.Id}/status",
+            new ChangeRetrospectiveStatusRequest
+            {
+                Status = AuthorRetrospectiveStatus.Published,
+                RowVersion = token
+            });
+        using var archiveRequest = new HttpRequestMessage(
+            HttpMethod.Delete, $"/api/retrospectives/{entity.Id}");
+        archiveRequest.Headers.TryAddWithoutValidation("If-Match", $"\"{token}\"");
+        using var archive = await _client.SendAsync(archiveRequest);
+
+        Assert.Equal(HttpStatusCode.NoContent, deactivate.StatusCode);
+        Assert.All(new[] { ownList, ownDetail, create, update, status, archive },
+            response => Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode));
+        await AssertProtectedContentNotDisclosedAsync(
+            entity, ownDetail, update, status, archive);
     }
 
     [Fact]
@@ -313,12 +402,34 @@ public sealed class RetrospectivesApiTests(UserApiFactory factory)
 
     private async Task AuthenticateAsync(string email)
     {
+        var token = await GetTokenAsync(email);
+        _client.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", token);
+    }
+
+    private async Task<string> GetTokenAsync(string email)
+    {
+        _client.DefaultRequestHeaders.Authorization = null;
         var response = await _client.PostAsJsonAsync("/api/auth/login",
             new LoginRequest { Email = email, Password = "password123" });
         response.EnsureSuccessStatusCode();
         var auth = await response.Content.ReadFromJsonAsync<AuthResponse>();
-        _client.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", auth!.AccessToken);
+        return auth!.AccessToken;
+    }
+
+    private static async Task AssertProtectedContentNotDisclosedAsync(
+        Retrospective retrospective,
+        params HttpResponseMessage[] responses)
+    {
+        var rowVersion = Convert.ToBase64String(retrospective.RowVersion);
+        foreach (var response in responses)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            Assert.DoesNotContain(retrospective.Title, body, StringComparison.Ordinal);
+            Assert.DoesNotContain(retrospective.ReviewContent, body, StringComparison.Ordinal);
+            Assert.DoesNotContain(rowVersion, body, StringComparison.Ordinal);
+            Assert.DoesNotContain(retrospective.AuthorUserId.ToString(), body, StringComparison.OrdinalIgnoreCase);
+        }
     }
 
     private static JsonSerializerOptions CreateJsonOptions()

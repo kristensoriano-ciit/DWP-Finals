@@ -11,9 +11,9 @@ namespace dotnet_backend.Controllers;
 public sealed class GamesController(IGameService gameService) : ControllerBase
 {
     [HttpGet]
+    [AllowAnonymous]
     [ProducesResponseType<PagedGamesResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     public async Task<ActionResult<PagedGamesResponse>> GetGames(
         [FromQuery] GameListQuery query,
         CancellationToken cancellationToken)
@@ -23,8 +23,8 @@ public sealed class GamesController(IGameService gameService) : ControllerBase
     }
 
     [HttpGet("{gameId:guid}")]
+    [AllowAnonymous]
     [ProducesResponseType<GameResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<GameResponse>> GetGame(
         Guid gameId,

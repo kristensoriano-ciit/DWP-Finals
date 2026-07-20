@@ -1,5 +1,10 @@
 # Quickstart: Retrospective Management
 
+> **Superseded for portal setup:** Feature 004 made active Game list/detail reads public and provides
+> the current browser and API workflow. Use the
+> [full-stack portal quickstart](../004-fullstack-retrospective-portal/quickstart.md). This document
+> remains a historical feature 003 backend reference.
+
 ## Prerequisites
 
 - Complete the Users and Games backend setup.
@@ -36,7 +41,8 @@ npx --yes @redocly/cli lint specs/003-retrospective-management/contracts/retrosp
 
 ## API Sequence
 
-1. Sign in as an Author and select an active Game from `GET /api/games`.
+1. Select an active Game from public `GET /api/games`; authenticate only for the Author operations
+   that follow.
 2. Create a Draft with `POST /api/retrospectives`.
 3. Read all owner statuses at `GET /api/account/retrospectives`.
 4. Update content using the current Base64 `rowVersion`.
