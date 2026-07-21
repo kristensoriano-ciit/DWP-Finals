@@ -45,7 +45,13 @@ jobs:
       - name: Generate ephemeral E2E configuration
         run: |
           $jwtBytes = New-Object byte[] 48
-          [Security.Cryptography.RandomNumberGenerator]::Fill($jwtBytes)
+          $randomNumberGenerator = [Security.Cryptography.RandomNumberGenerator]::Create()
+          try {
+            $randomNumberGenerator.GetBytes($jwtBytes)
+          }
+          finally {
+            $randomNumberGenerator.Dispose()
+          }
           $jwtKey = [Convert]::ToBase64String($jwtBytes)
           $password = "E2E!Aa1-$([Guid]::NewGuid().ToString('N'))"
           "E2E_CONNECTION_STRING=Server=(localdb)\DwpFinals;Database=DwpFinalsE2E;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True" >> $env:GITHUB_ENV
