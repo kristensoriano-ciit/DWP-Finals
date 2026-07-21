@@ -58,5 +58,41 @@ latency measurement.
 
 ## Browser Content Visibility
 
-Not measured by T081-T082. Desktop/mobile primary-content visibility remains the separate T091
-validation scope and no browser timing claim is made here.
+Measured on 2026-07-21 from commit `aae6c77` with the follow-up browser-validation worktree applied.
+This is a local primary-content baseline, not a production capacity or network-latency claim.
+
+### Environment and Method
+
+- Node: v24.14.0
+- Browser: Chromium 149.0.7827.55
+- Build mode: ASP.NET Core Release API and Vite production preview
+- Machine: Windows x64 with 16 logical processors
+- Database: SQL Server LocalDB `(localdb)\DwpFinals`, isolated database `DwpFinalsE2E`
+- Dataset: exactly 100 games (90 active, 10 archived), 100 users (1 active Admin, 89 active Authors,
+  10 inactive Authors), and 200 retrospectives (80 Published, 40 Draft, 30 Review, 30 Unpublished,
+  20 Archived)
+- Dataset distribution: ownership across 65 Authors, ratings from 1 through 10, created dates across
+  398 days, and 10 Published retrospectives retaining archived-game relationships
+- Sampling: three unrecorded warmups followed by 20 sequential samples for each route/viewport pair
+- Viewports: 320x900 and 1280x900 CSS pixels
+- Timing boundary: navigation start through visible API-backed primary content, with runtime console,
+  page, request, and HTTP failures treated as test failures
+- Requirement: every route/viewport p95 below 2,500 ms
+
+The ignored source artifact was `react-frontend/test-results/performance-results.json`. It remains
+untracked because it contains raw samples; this record intentionally includes only reproducible
+method details and summarized p95 evidence.
+
+### Results
+
+| Route | 320px p95 | 1280px p95 | Result |
+|-------|----------:|-----------:|--------|
+| Home | 90.95 ms | 67.99 ms | Pass |
+| Games | 67.62 ms | 62.78 ms | Pass |
+| Retrospectives | 80.93 ms | 73.27 ms | Pass |
+| Author dashboard | 93.50 ms | 97.45 ms | Pass |
+| Admin Games | 89.38 ms | 94.92 ms | Pass |
+| Admin Users | 89.36 ms | 86.50 ms | Pass |
+
+All 12 route/viewport measurements passed. The aggregate p95 across the 240 recorded samples was
+92.69 ms, and the maximum route/viewport p95 was 97.45 ms (Author dashboard at 1280px).

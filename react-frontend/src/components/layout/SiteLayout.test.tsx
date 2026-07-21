@@ -19,6 +19,12 @@ it('opens the mobile menu, moves focus, and closes with Escape', async () => {
   expect(screen.getByRole('button', { name: 'Menu' })).toHaveFocus()
 })
 
+it('moves focus to main content when the skip link is activated', async () => {
+  renderLayout()
+  await userEvent.click(screen.getByRole('link', { name: 'Skip to content' }))
+  expect(screen.getByRole('main')).toHaveFocus()
+})
+
 it('shows anonymous, Author, and Admin links by role', () => {
   const view = renderLayout()
   expect(screen.getByRole('link', { name: 'Sign in' })).toBeInTheDocument()

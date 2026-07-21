@@ -13,6 +13,17 @@ namespace dotnet_backend.Tests.Infrastructure;
 public sealed class UserApiFactory : WebApplicationFactory<Program>
 {
     private readonly string _databaseName = $"DwpFinalsTests_{Guid.NewGuid():N}";
+    private readonly IReadOnlyDictionary<string, string?> _configurationOverrides;
+
+    public UserApiFactory()
+        : this(new Dictionary<string, string?>())
+    {
+    }
+
+    internal UserApiFactory(IReadOnlyDictionary<string, string?> configurationOverrides)
+    {
+        _configurationOverrides = configurationOverrides;
+    }
 
     public string ConnectionString =>
         $"Server=(localdb)\\DwpFinals;Database={_databaseName};" +
@@ -27,6 +38,10 @@ public sealed class UserApiFactory : WebApplicationFactory<Program>
         builder.UseSetting("Jwt:Audience", "DwpFinals.Tests.Client");
         builder.UseSetting("Jwt:AccessTokenMinutes", "60");
         builder.UseSetting("AdminSeed:Enabled", "false");
+        foreach (var (key, value) in _configurationOverrides)
+        {
+            builder.UseSetting(key, value);
+        }
         builder.ConfigureAppConfiguration((_, configuration) =>
         {
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
@@ -40,6 +55,7 @@ public sealed class UserApiFactory : WebApplicationFactory<Program>
                 ["Logging:LogLevel:Default"] = "Warning",
                 ["Logging:LogLevel:Microsoft.EntityFrameworkCore"] = "Warning"
             });
+            configuration.AddInMemoryCollection(_configurationOverrides);
         });
 
         builder.ConfigureServices(services =>

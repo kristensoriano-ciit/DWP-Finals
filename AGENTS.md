@@ -14,8 +14,12 @@ This repository uses `.opencode` as the local agent workflow surface.
   ASP.NET Core API, Entity Framework Core data access, and migrations.
 - `dotnet-backend/dotnet-backend.Tests/`
   Backend service and migration-backed integration tests.
+- `dotnet-backend/dotnet-backend.E2E/`
+  Guarded LocalDB reset, migration, and deterministic browser-test dataset provisioner.
 - `react-frontend/`
-  React and Vite portal. Frontend tests are colocated under `src/`.
+  React and Vite portal. Unit tests are colocated under `src/`; Playwright suites live in `e2e/`.
+- `.github/workflows/e2e.yml`
+  Windows LocalDB CI for backend/frontend checks, Chromium journeys, accessibility, and performance.
 - `docs/`
   Workspace for project documentation, architecture notes, and delivery checklists.
 - `specs/`
@@ -47,3 +51,5 @@ This repository uses `.opencode` as the local agent workflow surface.
 - Prefer simple code over clever abstractions.
 - When docs are missing, add or update material in `docs/` alongside code changes.
 - When a new application project is added, document its real path here and add any app-specific skills or commands if the workflow changes.
+- Run browser validation only through `react-frontend/scripts/run-e2e.ps1`; its reset guard permits
+  only the named `(localdb)\DwpFinals` instance and isolated `DwpFinalsE2E` database.

@@ -11,7 +11,11 @@ server-side validation or authorization.
 |------|----------------|
 | `dotnet-backend/dotnet-backend/` | ASP.NET Core API, services, EF Core context, models, migrations, and development identity seeding |
 | `dotnet-backend/dotnet-backend.Tests/` | xUnit service, API integration, OpenAPI, CORS, and performance tests |
+| `dotnet-backend/dotnet-backend.E2E/` | Guarded executable that recreates, migrates, and deterministically seeds only `DwpFinalsE2E` |
 | `react-frontend/src/` | React pages, components, routing, session handling, typed API modules, and colocated Vitest tests |
+| `react-frontend/e2e/` | Serial Chromium journeys, accessibility checks, fixtures, and primary-content performance validation |
+| `react-frontend/scripts/run-e2e.ps1` | Release API/preview orchestration and exact LocalDB reset guard |
+| `.github/workflows/e2e.yml` | Windows LocalDB CI with generated runtime credentials and uploaded Playwright evidence |
 | `specs/` | Feature requirements, API/route contracts, quickstarts, and validation records |
 | `docs/` | Cross-feature architecture and supporting diagrams |
 | `.opencode/` | Local agent, skill, and repeatable command definitions |
@@ -116,6 +120,21 @@ non-file browser paths. The complete route and state contract is in
 
 The capability-level rules are recorded in the
 [`authorization matrix`](../specs/004-fullstack-retrospective-portal/contracts/authorization-matrix.md).
+
+## Browser Validation Boundary
+
+Browser validation is destructive only to the synthetic `DwpFinalsE2E` database. Both the
+PowerShell orchestrator and the .NET provisioner require explicit `YES` reset consent and reject a
+server other than `(localdb)\DwpFinals` or a database name other than `DwpFinalsE2E`. The
+orchestrator first validates clean setup against an empty migrated database, then reseeds the fixed
+100-game, 100-user, 200-retrospective dataset for role journeys, accessibility, and performance.
+
+Playwright runs one Chromium worker against the ASP.NET Core Release API and Vite production
+preview. Role sessions use separate browser contexts. Authenticated projects disable traces and
+video so bearer headers and entered values are not recorded; generated reports and failure
+diagnostics are ignored by Git. The Windows workflow generates its JWT key and account password at
+runtime, runs backend/frontend checks before both guarded browser commands, and uploads only the
+generated Playwright directories as a short-lived artifact.
 
 ## Deployment Boundary
 

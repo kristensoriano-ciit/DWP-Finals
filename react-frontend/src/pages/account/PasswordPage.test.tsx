@@ -27,6 +27,7 @@ it('validates the new password and signs out after a successful change', async (
   fireEvent.click(screen.getByRole('button', { name: /change password/i }))
   expect(await screen.findByText(/password changed/i)).toBeInTheDocument()
   expect(mocks.signOut).toHaveBeenCalled()
+  expect(sessionStorage.getItem('checkpoint.passwordChanged')).toBe('true')
 })
 
 it('prevents repeated password changes while pending', async () => {

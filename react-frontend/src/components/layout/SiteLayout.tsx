@@ -23,8 +23,14 @@ export function SiteLayout({ user = null }: { user?: User | null }) {
     menuButtonRef.current?.focus()
   }
 
+  function focusMainContent(event: React.MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault()
+    document.getElementById('main-content')?.focus()
+    window.history.replaceState(null, '', '#main-content')
+  }
+
   return <div className="site-shell">
-    <a className="skip-link" href="#main-content">Skip to content</a>
+    <a className="skip-link" href="#main-content" onClick={focusMainContent}>Skip to content</a>
     <header className="site-header">
       <Link className="brand" to="/" aria-label="Checkpoint home"><span className="brand__mark" aria-hidden="true">C</span>CHECKPOINT</Link>
       <button ref={menuButtonRef} className="menu-button" type="button" aria-expanded={isMenuOpen} aria-controls="main-navigation" onClick={() => setMenuLocation(isMenuOpen ? null : locationKey)}>Menu</button>
@@ -42,7 +48,7 @@ export function SiteLayout({ user = null }: { user?: User | null }) {
         {activeUser && session && <button className="navigation-action" type="button" onClick={session.signOut}>Sign out</button>}
       </nav>
     </header>
-    <main id="main-content"><Outlet /></main>
+    <main id="main-content" tabIndex={-1}><Outlet /></main>
     <footer><Link className="brand brand--small" to="/">CHECKPOINT</Link><p>Games remembered with the benefit of time.</p><span>© 2026</span></footer>
   </div>
 }

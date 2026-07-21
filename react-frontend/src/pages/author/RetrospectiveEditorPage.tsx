@@ -36,9 +36,14 @@ export function RetrospectiveEditorPage() {
   const [message, setMessage] = useState('')
   const [pending, setPending] = useState(false)
   const [conflict, setConflict] = useState(false)
+  const [createdId, setCreatedId] = useState('')
   const baseline = loaded ? toDraft(loaded) : emptyRetrospectiveDraft()
   const dirty = !sameDraft(draft, baseline)
   const navigation = useUnsavedChanges(dirty)
+
+  useEffect(() => {
+    if (createdId && !dirty) navigate(`/dashboard/retrospectives/${createdId}/edit`, { replace: true })
+  }, [createdId, dirty, navigate])
 
   useEffect(() => {
     if (!session.token) return
@@ -84,7 +89,7 @@ export function RetrospectiveEditorPage() {
         ? await updateRetrospective(retrospectiveId, { ...body, rowVersion: loaded.rowVersion }, session.token, requestOptions())
         : await createRetrospective({ ...body, status: value.status, unpublishedReason: value.status === 'unpublished' ? value.unpublishedReason.trim() : null }, session.token, requestOptions())
       storage.discard(); setLoaded(result); setDraft(toDraft(result)); setMessage('Retrospective saved.')
-      if (!isEdit) window.setTimeout(() => navigate(`/dashboard/retrospectives/${result.id}/edit`, { replace: true }), 0)
+      if (!isEdit) setCreatedId(result.id)
     } catch (error) { handleFailure(error) } finally { setPending(false) }
   }
   async function changeStatus(status: AuthorRetrospectiveStatus, reason: string) {

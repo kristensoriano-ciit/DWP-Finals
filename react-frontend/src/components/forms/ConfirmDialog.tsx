@@ -34,7 +34,22 @@ export function ConfirmDialog({ isOpen, title, description, confirmLabel, isPend
     previousFocus.current?.focus()
   }, [isOpen])
 
-  return <dialog ref={dialogRef} className="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-description" onCancel={(event) => { event.preventDefault(); onCancel() }}>
+  function trapFocus(event: React.KeyboardEvent<HTMLDialogElement>) {
+    if (event.key !== 'Tab') return
+    const buttons = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>('button:not(:disabled)'))
+    if (!buttons.length) return
+    const first = buttons[0]
+    const last = buttons[buttons.length - 1]
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+
+  return <dialog ref={dialogRef} className="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-description" onKeyDown={trapFocus} onCancel={(event) => { event.preventDefault(); onCancel() }}>
     <h2 id="confirm-title">{title}</h2>
     <p id="confirm-description">{description}</p>
     <div className="dialog-actions">

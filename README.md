@@ -5,7 +5,9 @@ Retrospectives, Authors manage and publish their own work, and Admins manage the
 user access.
 
 The repository contains an ASP.NET Core 8 API in `dotnet-backend/dotnet-backend/`, xUnit tests in
-`dotnet-backend/dotnet-backend.Tests/`, and a React 19/Vite SPA in `react-frontend/`.
+`dotnet-backend/dotnet-backend.Tests/`, a guarded browser-test provisioner in
+`dotnet-backend/dotnet-backend.E2E/`, and a React 19/Vite SPA with Playwright tests in
+`react-frontend/`.
 
 ## Documentation
 
@@ -15,6 +17,8 @@ The repository contains an ASP.NET Core 8 API in `dotnet-backend/dotnet-backend/
 - [Frontend route contract](specs/004-fullstack-retrospective-portal/contracts/frontend-routes.md)
 - [Authorization matrix](specs/004-fullstack-retrospective-portal/contracts/authorization-matrix.md)
 - [Portal API contract](specs/004-fullstack-retrospective-portal/contracts/portal-api.yaml)
+- [Accessibility validation](specs/004-fullstack-retrospective-portal/accessibility-validation.md)
+- [Performance baseline](specs/004-fullstack-retrospective-portal/performance.md)
 
 ## Prerequisites
 
@@ -97,12 +101,22 @@ npm run dev
 npm run lint
 npm run test -- --run
 npm run build
+npm run test:e2e
+npm run test:e2e:performance
 npm run preview
 ```
 
 Frontend tests are colocated with their API modules, guards, hooks, components, and pages. Backend
 tests include service and migration-backed API integration coverage. Detailed validation, OpenAPI
 lint, and pending-migration commands are in the [quickstart](specs/004-fullstack-retrospective-portal/quickstart.md#automated-validation).
+
+The Playwright commands build the Release API and production frontend preview, reset only the
+guarded `DwpFinalsE2E` LocalDB database, and run serial Chromium projects. Configure the temporary
+values documented in the
+[browser-validation quickstart](specs/004-fullstack-retrospective-portal/quickstart.md#automated-browser-validation)
+before running them. `.github/workflows/e2e.yml` performs the same flow on Windows with credentials
+generated for that job and uploads generated reports, results, and failure diagnostics as a
+short-lived artifact; runtime secrets are never committed or uploaded.
 
 ## Route Guidance
 

@@ -226,11 +226,30 @@ without adding out-of-scope product features.
 - [X] T084 [P] Replace scaffold instructions with portal overview, setup links, scripts, route guidance, and a complete secret/public configuration matrix covering database connection, JWT key/issuer/audience/lifetime, development/preview CORS origins, Admin seed settings, frontend API base URL, and production placeholders in `README.md` and `react-frontend/README.md`
 - [X] T085 [P] Replace the stale weather request with public browse and authenticated examples in `dotnet-backend/dotnet-backend/dotnet-backend.http` and mark authenticated-game-read instructions as superseded in `specs/002-game-management/quickstart.md` and `specs/003-retrospective-management/quickstart.md`
 - [ ] T086 Validate keyboard-only journeys, visible focus, live feedback, image fallbacks, reduced motion, and no horizontal overflow at 320, 768, and 1280 pixels using `specs/004-fullstack-retrospective-portal/quickstart.md`, recording date, commit, browser, routes, viewports, pass/fail results, and defects in `specs/004-fullstack-retrospective-portal/accessibility-validation.md`
-- [ ] T087 Validate local setup, Admin preparation, demo-data creation, public smoke checks, all five journeys, and local preview from a clean environment using `specs/004-fullstack-retrospective-portal/quickstart.md`
+- [X] T087 Validate local setup, Admin preparation, demo-data creation, public smoke checks, all five journeys, and local preview from a clean environment using `specs/004-fullstack-retrospective-portal/quickstart.md`
 - [X] T088 Run backend format verification, build, full migration-backed test suite, and pending-model check using commands in `specs/004-fullstack-retrospective-portal/quickstart.md`
 - [X] T089 Run `npm ci`, frontend lint, all frontend tests, production build, and local preview using commands in `specs/004-fullstack-retrospective-portal/quickstart.md`
 - [X] T090 Run `npx --yes @redocly/cli lint specs/002-game-management/contracts/games-api.yaml`, `npx --yes @redocly/cli lint specs/004-fullstack-retrospective-portal/contracts/portal-api.yaml`, and `git diff --check` from the repository root
-- [ ] T091 Measure primary-content visibility for at least 20 visits at 320px and 1280px on Home, Games, Retrospectives, Author dashboard, and Admin lists; calculate desktop/mobile p95 and record browser, build mode, dataset seed, sample counts, pass/fail results, and approved exceptions in `specs/004-fullstack-retrospective-portal/performance.md`
+- [X] T091 Measure primary-content visibility for at least 20 visits at 320px and 1280px on Home, Games, Retrospectives, Author dashboard, and Admin lists; calculate desktop/mobile p95 and record browser, build mode, dataset seed, sample counts, pass/fail results, and approved exceptions in `specs/004-fullstack-retrospective-portal/performance.md`
+
+---
+
+## Phase 9: Automated Browser Validation
+
+**Purpose**: Replace the remaining manual-only validation with isolated, repeatable Chromium evidence
+without modifying production behavior or developer data.
+
+- [X] T092 Add `@playwright/test`, `@axe-core/playwright`, browser-test scripts, generated-artifact ignores, and Chromium setup documentation in `react-frontend/package.json`, `react-frontend/package-lock.json`, `react-frontend/.gitignore`, and `react-frontend/README.md`
+- [X] T093 Create the guarded `DwpFinalsE2E` reset/migration/seed utility with approved-LocalDB, exact-database, and explicit-opt-in checks in `dotnet-backend/dotnet-backend.E2E/dotnet-backend.E2E.csproj`, `dotnet-backend/dotnet-backend.E2E/Program.cs`, and `dotnet-backend/dotnet-backend.E2E/NormalPerformanceDatasetSeeder.cs`
+- [X] T094 Reuse the deterministic E2E dataset from backend performance tests without changing the 100-game, 200-Retrospective, 100-user totals in `dotnet-backend/dotnet-backend.Tests/dotnet-backend.Tests.csproj`, `dotnet-backend/dotnet-backend.Tests/PerformanceTests.cs`, and `dotnet-backend/dotnet-backend.Tests/Infrastructure/NormalPerformanceDatasetSeeder.cs`
+- [X] T095 Configure serial Chromium projects, Release API/preview servers, synthetic-only artifacts, and clean-setup versus deterministic-seed orchestration in `react-frontend/playwright.config.ts` and `react-frontend/scripts/run-e2e.ps1`
+- [X] T096 Implement role-isolated sessionStorage contexts, deterministic fixture identities, content readiness, keyboard/focus, overflow, and p95 helpers in `react-frontend/e2e/fixtures.ts` and `react-frontend/e2e/helpers.ts`
+- [X] T097 Implement clean setup plus Visitor, Account, Author, Admin Game, and Admin User browser journeys in `react-frontend/e2e/journeys.spec.ts`
+- [X] T098 Implement Axe WCAG A/AA, keyboard, focus, modal, live-region, reduced-motion, image-fallback, and 320/768/1280 overflow validation in `react-frontend/e2e/accessibility.spec.ts`
+- [X] T099 Implement three-warmup, 20-sample, 320/1280 per-route primary-content p95 validation and raw JSON output in `react-frontend/e2e/performance.spec.ts`
+- [X] T100 Add Windows LocalDB browser-validation CI and document the E2E project/workflow in `.github/workflows/e2e.yml`, `AGENTS.md`, `README.md`, and `docs/fullstack-architecture.md`
+- [X] T101 Run the complete Playwright journey/accessibility suite and record date, commit, Chromium, routes, viewports, results, limitations, and defects in `specs/004-fullstack-retrospective-portal/accessibility-validation.md`
+- [X] T102 Run the isolated Playwright performance suite, record all required environment/sample/p95 evidence in `specs/004-fullstack-retrospective-portal/performance.md`, and mark T086, T087, and T091 complete only when their contracts pass
 
 ---
 
@@ -246,6 +265,7 @@ without adding out-of-scope product features.
 - **US4 (Phase 6)** depends on US2 for a usable browser journey; its components may be developed in parallel with a seeded Admin session after Foundational.
 - **US5 (Phase 7)** depends on US2 for a usable browser journey; its components may be developed in parallel with a seeded Admin session after Foundational.
 - **Polish (Phase 8)** depends on every story selected for release.
+- **Automated Browser Validation (Phase 9)** depends on the completed portal and Phase 8 automated checks; T093-T094 precede T095-T099, and T101-T102 run last.
 
 ### User Story Completion Order
 

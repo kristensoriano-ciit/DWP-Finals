@@ -18,9 +18,15 @@ export function LoginPage() {
   const [errors, setErrors] = useState<Record<string, string[]>>({})
   const [message, setMessage] = useState('')
   const [pending, setPending] = useState(false)
+  const [passwordChanged] = useState(() => {
+    const wasChanged = state?.passwordChanged === true || sessionStorage.getItem('checkpoint.passwordChanged') === 'true'
+    sessionStorage.removeItem('checkpoint.passwordChanged')
+    return wasChanged
+  })
 
   if (session.status === 'authenticated' && session.user) {
-    return <Navigate to={session.user.role === 'Admin' ? '/admin' : '/dashboard/retrospectives'} replace />
+    const defaultPath = session.user.role === 'Admin' ? '/admin' : '/dashboard/retrospectives'
+    return <Navigate to={state?.returnPath ? safeReturnPath(state.returnPath, session.user.role) : defaultPath} replace />
   }
 
   async function submit(event: FormEvent) {
@@ -52,7 +58,7 @@ export function LoginPage() {
     <div className="auth-page__intro"><p className="eyebrow">Account access</p><h1>Sign in</h1><p>Return to your Checkpoint workspace.</p></div>
     <form className="account-form" onSubmit={submit} noValidate>
       {state?.expired && <p className="notice" role="status">Your session expired. Sign in to continue.</p>}
-      {state?.passwordChanged && <p className="notice" role="status">Password changed. Sign in with your new password.</p>}
+      {passwordChanged && <p className="notice" role="status">Password changed. Sign in with your new password.</p>}
       <FieldErrorSummary errors={errors} />
       {message && <p className="form-message form-message--error" role="alert">{message}</p>}
       <label htmlFor="email">Email</label><input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} aria-invalid={!!errors.email} aria-describedby={errors.email?.length ? 'email-error' : undefined} />

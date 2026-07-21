@@ -22,6 +22,19 @@ npm run dev -- --host localhost --port 5173 --strictPort
 
 Open `http://localhost:5173`. The backend CORS allow-list must contain that exact origin.
 
+### Playwright Chromium
+
+Install the frontend dependencies and the Chromium binary used by Playwright:
+
+```powershell
+npm ci
+npx playwright install chromium
+```
+
+The browser suites use Chromium only. Installing npm dependencies does not install the browser
+binary, so run the Playwright install command once on each development or CI machine and again when
+Playwright requests a matching browser update.
+
 ## Configuration
 
 | Setting | Secret? | Development/preview | Production |
@@ -53,12 +66,27 @@ commands are in the [root README](../README.md#configuration-matrix).
 | `npm run lint` | Run ESLint across the frontend |
 | `npm run test -- --run` | Run the Vitest suite once |
 | `npm run test` | Run Vitest in watch mode |
+| `npm run test:e2e` | Run the orchestrated Chromium journey and accessibility suites |
+| `npm run test:e2e:performance` | Run the isolated Chromium primary-content performance suite |
 | `npm run build` | Type-check and create `dist/` production assets |
 | `npm run preview` | Serve the production build locally |
 
 Tests use Vitest, jsdom, React Testing Library, user-event, and jest-dom. They are colocated as
 `*.test.ts` or `*.test.tsx` beside the API module, auth guard, hook, component, or page under test;
 shared setup is in `src/test/setup.ts`.
+
+The E2E scripts invoke `scripts/run-e2e.ps1`, which owns the isolated database reset, Release API,
+production preview, and serial Playwright lifecycle. `playwright.config.ts` separates clean setup,
+Visitor, Account, Author, Admin, accessibility, and performance projects. Browser validation must
+use only the guarded `DwpFinalsE2E` database and the required environment values described in the
+[feature quickstart](../specs/004-fullstack-retrospective-portal/quickstart.md#automated-browser-validation).
+Generated reports, results, traces, screenshots, videos, and browser cache files remain under
+ignored Playwright artifact directories.
+
+The Windows workflow at `../.github/workflows/e2e.yml` creates a named LocalDB instance, generates
+job-scoped JWT and account secrets, installs Chromium, runs backend/frontend checks, validates the
+database guard, and then runs both E2E commands. It uploads generated Playwright output for 14 days;
+the generated secrets are neither printed nor included in that artifact.
 
 ## Routes
 

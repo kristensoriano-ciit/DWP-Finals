@@ -40,3 +40,16 @@ it('supports native cancellation and confirmation', async () => {
   expect(onConfirm).toHaveBeenCalledOnce()
   view.unmount()
 })
+
+it('traps focus in both directions', async () => {
+  render(<Harness />)
+  await userEvent.click(screen.getByRole('button', { name: 'Archive' }))
+  const dialog = screen.getByRole('dialog')
+  const cancel = dialog.querySelector('button:first-of-type') as HTMLButtonElement
+  const confirm = dialog.querySelector('button:last-of-type') as HTMLButtonElement
+  expect(cancel).toHaveFocus()
+  await userEvent.tab({ shift: true })
+  expect(confirm).toHaveFocus()
+  await userEvent.tab()
+  expect(cancel).toHaveFocus()
+})

@@ -24,7 +24,7 @@ describe('RetrospectiveEditorPage', () => {
   it('creates with the selected initial status and prevents repeated submission', async () => {
     let resolve!: (value: typeof ownedRetrospective) => void
     api.create.mockReturnValue(new Promise((done) => { resolve = done }))
-    renderEditor('/dashboard/retrospectives/new')
+    const router = renderEditor('/dashboard/retrospectives/new')
     await screen.findByLabelText('Game')
     await userEvent.selectOptions(screen.getByLabelText('Game'), 'game-1')
     await userEvent.type(screen.getByLabelText('Title'), 'A new look')
@@ -34,6 +34,8 @@ describe('RetrospectiveEditorPage', () => {
     expect(api.create).toHaveBeenCalledWith(expect.objectContaining({ status: 'published' }), 'token', expect.any(Object))
     expect(screen.getByRole('button', { name: 'Saving...' })).toBeDisabled()
     resolve(ownedRetrospective)
+    await vi.waitFor(() => expect(router.state.location.pathname).toBe('/dashboard/retrospectives/retro-1/edit'))
+    expect(screen.queryByRole('alertdialog', { name: 'Leave with unsaved changes?' })).not.toBeInTheDocument()
   })
 
   it('preserves edited text and offers the current server version after conflict', async () => {

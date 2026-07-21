@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\dotnet-backend\dotnet-backend.csproj" />
+    <ProjectReference Include="..\dotnet-backend.E2E\dotnet-backend.E2E.csproj" />
   </ItemGroup>
 
 </Project>

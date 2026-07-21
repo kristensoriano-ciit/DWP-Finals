@@ -1,0 +1,105 @@
+name: End-to-end validation
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: Windows LocalDB and Chromium
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    defaults:
+      run:
+        shell: powershell
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: react-frontend/package-lock.json
+
+      - name: Start isolated LocalDB instance
+        run: |
+          sqllocaldb create DwpFinals
+          sqllocaldb start DwpFinals
+          sqllocaldb info DwpFinals
+
+      - name: Generate ephemeral E2E configuration
+        run: |
+          $jwtBytes = New-Object byte[] 48
+          [Security.Cryptography.RandomNumberGenerator]::Fill($jwtBytes)
+          $jwtKey = [Convert]::ToBase64String($jwtBytes)
+          $password = "E2E!Aa1-$([Guid]::NewGuid().ToString('N'))"
+          "E2E_CONNECTION_STRING=Server=(localdb)\DwpFinals;Database=DwpFinalsE2E;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True" >> $env:GITHUB_ENV
+          "E2E_JWT_KEY=$jwtKey" >> $env:GITHUB_ENV
+          "E2E_PASSWORD=$password" >> $env:GITHUB_ENV
+          "E2E_ALLOW_DATABASE_RESET=YES" >> $env:GITHUB_ENV
+
+      - name: Restore repository-local .NET tools
+        working-directory: dotnet-backend/dotnet-backend
+        run: dotnet tool restore
+
+      - name: Restore and check backend
+        working-directory: dotnet-backend
+        run: |
+          dotnet restore dotnet-backend.Tests/dotnet-backend.Tests.csproj
+          dotnet format dotnet-backend/dotnet-backend.csproj --verify-no-changes --no-restore
+          dotnet format dotnet-backend.Tests/dotnet-backend.Tests.csproj --verify-no-changes --no-restore
+          dotnet build dotnet-backend.Tests/dotnet-backend.Tests.csproj --configuration Release --no-restore
+          dotnet test dotnet-backend.Tests/dotnet-backend.Tests.csproj --configuration Release --no-build
+
+      - name: Install frontend and Chromium
+        working-directory: react-frontend
+        run: |
+          npm ci
+          npx playwright install chromium
+
+      - name: Check frontend
+        working-directory: react-frontend
+        env:
+          VITE_API_BASE_URL: https://localhost:7047
+        run: |
+          npm run lint
+          npm run test -- --run
+          npm run build
+
+      - name: Validate E2E database guard
+        working-directory: react-frontend
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-e2e.ps1 -ValidateGuardsOnly
+
+      - name: Run journey and accessibility suites
+        working-directory: react-frontend
+        run: npm run test:e2e
+
+      - name: Run isolated performance suite
+        working-directory: react-frontend
+        run: npm run test:e2e:performance
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-windows-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            react-frontend/playwright-report/
+            react-frontend/test-results/
+          if-no-files-found: warn
+          retention-days: 14

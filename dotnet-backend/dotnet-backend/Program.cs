@@ -35,6 +35,17 @@ var jwtIssuer = builder.Configuration["Jwt:Issuer"]
 var jwtAudience = builder.Configuration["Jwt:Audience"]
     ?? throw new InvalidOperationException("Jwt:Audience must be configured.");
 
+var loginPermitLimit = builder.Configuration.GetValue("RateLimiting:Login:PermitLimit", 10);
+var loginWindowSeconds = builder.Configuration.GetValue("RateLimiting:Login:WindowSeconds", 60);
+if (loginPermitLimit is < 1 or > 1000)
+{
+    throw new InvalidOperationException("RateLimiting:Login:PermitLimit must be between 1 and 1000.");
+}
+if (loginWindowSeconds is < 1 or > 3600)
+{
+    throw new InvalidOperationException("RateLimiting:Login:WindowSeconds must be between 1 and 3600.");
+}
+
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString));
 
@@ -138,8 +149,8 @@ builder.Services.AddRateLimiter(options =>
         httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
         _ => new FixedWindowRateLimiterOptions
         {
-            PermitLimit = 10,
-            Window = TimeSpan.FromMinutes(1),
+            PermitLimit = loginPermitLimit,
+            Window = TimeSpan.FromSeconds(loginWindowSeconds),
             QueueLimit = 0,
             AutoReplenishment = true
         }));

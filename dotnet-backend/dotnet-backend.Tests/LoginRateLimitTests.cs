@@ -37,4 +37,35 @@ public sealed class LoginRateLimitTests(UserApiFactory factory)
         Assert.Equal(10, statuses.Count(status => status == HttpStatusCode.Unauthorized));
         Assert.Equal(HttpStatusCode.TooManyRequests, statuses[^1]);
     }
+
+    [Fact]
+    public async Task Login_UsesConfiguredFixedWindowPermitLimit()
+    {
+        using var configuredFactory = new UserApiFactory(new Dictionary<string, string?>
+        {
+            ["RateLimiting:Login:PermitLimit"] = "2"
+        });
+        await configuredFactory.ResetDatabaseAsync();
+        using var client = configuredFactory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            BaseAddress = new Uri("https://localhost")
+        });
+
+        var statuses = new List<HttpStatusCode>();
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            var response = await client.PostAsJsonAsync(
+                "/api/auth/login",
+                new LoginRequest
+                {
+                    Email = "configured-limit@example.com",
+                    Password = "wrong-password"
+                });
+            statuses.Add(response.StatusCode);
+        }
+
+        Assert.Equal(
+            [HttpStatusCode.Unauthorized, HttpStatusCode.Unauthorized, HttpStatusCode.TooManyRequests],
+            statuses);
+    }
 }

@@ -30,6 +30,7 @@ export function PasswordPage() {
     try {
       await changePassword({ currentPassword, newPassword }, session.token, session.onUnauthorized)
       setMessage('Password changed. Your session has ended.')
+      sessionStorage.setItem('checkpoint.passwordChanged', 'true')
       session.signOut()
       navigate('/login', { replace: true, state: { passwordChanged: true } })
     } catch (error) {
