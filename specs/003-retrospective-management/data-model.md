@@ -6,7 +6,7 @@
 |---|---|---|
 | Id | GUID | Primary key |
 | GameId | GUID | Required FK to Games; restricted delete |
-| AuthorUserId | GUID | Required FK to AspNetUsers; restricted delete |
+| AuthorUserId | GUID | Required FK to the Identity-backed Users table; restricted delete |
 | Title | string | Required, trimmed, 1-200 |
 | ReviewContent | string | Required, trimmed, 1-20,000 |
 | ImageUrl | string? | Absolute HTTP/HTTPS, max 2,048 |

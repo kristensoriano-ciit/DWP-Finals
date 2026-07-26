@@ -18,7 +18,7 @@ function renderEditor(path: string) {
 beforeEach(() => Object.values(api).forEach((mock) => mock.mockReset()))
 
 describe('AdminGameEditorPage', () => {
-  it('creates a game once, preserves controlled values while pending, and reports success', async () => {
+  it('creates a game once, preserves controlled values while pending, and returns to game administration', async () => {
     let resolve!: (value: typeof game) => void
     api.create.mockReturnValue(new Promise((done) => { resolve = done }))
     renderEditor('/admin/games/new')
@@ -29,7 +29,7 @@ describe('AdminGameEditorPage', () => {
     expect(screen.getByLabelText('Title')).toHaveValue('Control')
     expect(api.create).toHaveBeenCalledTimes(1)
     resolve(game)
-    expect(await screen.findByText('Game created.')).toBeInTheDocument()
+    expect(await screen.findByText('Game administration')).toBeInTheDocument()
   })
 
   it('loads and updates an existing game', async () => {

@@ -73,6 +73,9 @@ Admin operations are limited to Game and user administration. Admin is not an Au
   not grant server permissions.
 - `src/components/` owns reusable presentation, forms, feedback, navigation, pagination, images, and
   confirmation behavior. Components do not duplicate domain authorization.
+- `src/components/dashboard/DashboardPanels.tsx` composes the existing public Game and
+  Retrospective APIs into New Releases, Upcoming Releases, and Best Retrospectives. Authors and
+  Admins share this discovery component without sharing their protected management permissions.
 - `src/hooks/` owns the focused unsaved-change warning and temporary session-expiry draft recovery.
 - Tests are colocated with the API module, guard, hook, component, or page they exercise. Shared test
   setup lives in `src/test/`.

@@ -39,6 +39,7 @@ export const router = createBrowserRouter([{
           element: <RequireRole role="Author" />,
           children: [
             { path: 'dashboard/retrospectives', element: <AuthorRetrospectivesPage /> },
+            { path: 'dashboard/retrospectives/unpublished', element: <AuthorRetrospectivesPage fixedStatus="unpublished" /> },
             { path: 'dashboard/retrospectives/new', element: <RetrospectiveEditorPage /> },
             { path: 'dashboard/retrospectives/:retrospectiveId/edit', element: <RetrospectiveEditorPage /> },
           ],

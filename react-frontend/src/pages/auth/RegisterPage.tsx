@@ -1,12 +1,13 @@
 import { useState, type FormEvent } from 'react'
-import { Link, Navigate } from 'react-router-dom'
-import { register } from '../../api/authApi'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { login, register } from '../../api/authApi'
 import { ApiError } from '../../api/http'
 import { FieldErrorSummary, LiveStatus } from '../../components/feedback/Feedback'
 import { useSession } from '../../auth/useSession'
 
 export function RegisterPage() {
   const session = useSession()
+  const navigate = useNavigate()
   const [displayName, setDisplayName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -29,9 +30,16 @@ export function RegisterPage() {
     if (Object.keys(nextErrors).length) return
     setPending(true)
     try {
-      await register({ displayName: name, email: email.trim(), password })
-      setMessage('Account created. You can now sign in.')
-      setPassword('')
+      const normalizedEmail = email.trim()
+      await register({ displayName: name, email: normalizedEmail, password })
+      try {
+        const auth = await login({ email: normalizedEmail, password })
+        session.signIn(auth)
+        navigate('/dashboard/retrospectives', { replace: true })
+      } catch {
+        setMessage('Account created, but automatic sign-in failed. Please sign in.')
+        setPassword('')
+      }
     } catch (error) {
       if (error instanceof ApiError) {
         setErrors(error.fieldErrors)
@@ -46,7 +54,7 @@ export function RegisterPage() {
     <div className="auth-page__intro"><p className="eyebrow">Join Checkpoint</p><h1>Create an account</h1><p>Every new account starts with Author access.</p></div>
     <form className="account-form" onSubmit={submit} noValidate>
       <FieldErrorSummary errors={errors} />
-      {message && <p className={message.startsWith('Account created') ? 'form-message' : 'form-message form-message--error'} role="status">{message}</p>}
+      {message && <p className="form-message form-message--error" role="status">{message}</p>}
       <label htmlFor="displayName">Display name</label><input id="displayName" autoComplete="name" value={displayName} onChange={(event) => setDisplayName(event.target.value)} aria-invalid={!!errors.displayName} aria-describedby={errors.displayName?.length ? 'displayName-error' : undefined} />
       {errors.displayName?.map((error, index) => <p id={index === 0 ? 'displayName-error' : undefined} className="field-error" role="alert" key={error}>{error}</p>)}
       <label htmlFor="email">Email</label><input id="email" type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} aria-invalid={!!errors.email} aria-describedby={errors.email?.length ? 'email-error' : undefined} />

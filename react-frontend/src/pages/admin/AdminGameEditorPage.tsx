@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { createGame, getGame, updateGame } from '../../api/gamesApi'
 import { ApiError } from '../../api/http'
 import type { Game, GameRequest } from '../../api/types'
@@ -15,6 +15,7 @@ function toDraft(game: Game): GameDraft {
 export function AdminGameEditorPage() {
   const { gameId } = useParams()
   const isEdit = !!gameId
+  const navigate = useNavigate()
   const session = useSession()
   const [draft, setDraft] = useState<GameDraft>(emptyGameDraft)
   const [loading, setLoading] = useState(isEdit)
@@ -41,8 +42,12 @@ export function AdminGameEditorPage() {
       const result = gameId
         ? await updateGame(gameId, body, session.token, { onUnauthorized: session.onUnauthorized })
         : await createGame(body, session.token, { onUnauthorized: session.onUnauthorized })
+      if (!gameId) {
+        navigate('/admin/games')
+        return
+      }
       setDraft(toDraft(result))
-      setMessage(gameId ? 'Game updated.' : 'Game created.')
+      setMessage('Game updated.')
     } catch (error) {
       if (error instanceof ApiError) {
         setFieldErrors(error.fieldErrors)

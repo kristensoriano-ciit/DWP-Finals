@@ -35,6 +35,26 @@ it('prevents repeated submission while login is pending', async () => {
   expect(mocks.login).toHaveBeenCalledTimes(1)
 })
 
+it.each([
+  ['Admin', '/admin'],
+  ['Author', '/dashboard/retrospectives'],
+] as const)('sends a directly signed-in %s to the role default', async (role, expectedPath) => {
+  mocks.login.mockResolvedValue({ accessToken: 'token', expiresAtUtc: '2026-07-25T00:00:00Z', user: { role } })
+  const router = createMemoryRouter([
+    { path: '/login', element: <LoginPage /> },
+    { path: '/admin', element: <p>Admin dashboard</p> },
+    { path: '/dashboard/retrospectives', element: <p>Author dashboard</p> },
+  ], { initialEntries: ['/login'] })
+  render(<RouterProvider router={router} />)
+
+  await userEvent.type(screen.getByLabelText(/email/i), 'ada@example.test')
+  await userEvent.type(screen.getByLabelText(/password/i), 'password')
+  await userEvent.click(screen.getByRole('button', { name: /sign in/i }))
+
+  await vi.waitFor(() => expect(router.state.location.pathname).toBe(expectedPath))
+  expect(mocks.signIn).toHaveBeenCalledTimes(1)
+})
+
 it('preserves a safe protected return path when authentication completes', () => {
   mocks.session = { status: 'authenticated', user: { role: 'Author' }, signIn: mocks.signIn }
   const router = createMemoryRouter([

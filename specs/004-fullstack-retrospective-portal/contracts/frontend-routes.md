@@ -14,10 +14,11 @@ states. The backend remains the security boundary even when navigation or contro
 | `/register` | Anonymous preferred | Registration form | Idle, validation error, duplicate email, submitting, success |
 | `/account` | Authenticated | Current profile | Restoring, loading, validation error, submitting, success, expired session |
 | `/account/password` | Authenticated | Password-change form | Idle, validation error, rejected current password, submitting, success/sign-out |
-| `/dashboard/retrospectives` | Author | Owned retrospectives | Restoring, loading, results, empty, invalid query, forbidden, unexpected error |
+| `/dashboard/retrospectives` | Author | Owned retrospectives plus new, upcoming, and best discovery panels | Restoring, loading, results, empty, partial failure, invalid query, forbidden, unexpected error |
+| `/dashboard/retrospectives/unpublished` | Author | Owned unpublished retrospectives and their saved reasons | Restoring, loading, results, empty, forbidden, unexpected error |
 | `/dashboard/retrospectives/new` | Author | Active games and new draft | Loading games, validation error, submitting, success, expired session |
 | `/dashboard/retrospectives/:retrospectiveId/edit` | Owning Author | Owner retrospective and active games | Loading, not found/forbidden, dirty, validation error, submitting, conflict, success |
-| `/admin` | Admin | Admin navigation summary | Restoring, ready, forbidden |
+| `/admin` | Admin | Admin navigation plus new, upcoming, and best discovery panels | Restoring, loading, ready, empty, partial failure, forbidden |
 | `/admin/games` | Admin | Active games | Loading, results, empty, invalid query, forbidden, unexpected error |
 | `/admin/games/new` | Admin | New game form | Validation error, duplicate conflict, submitting, success |
 | `/admin/games/:gameId/edit` | Admin | Active game | Loading, not found, validation error, duplicate conflict, submitting, success |

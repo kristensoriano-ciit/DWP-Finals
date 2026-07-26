@@ -32,7 +32,7 @@ public sealed class ApplicationDbContext(
                 .IsUnique()
                 .HasFilter("[NormalizedEmail] IS NOT NULL");
 
-            user.ToTable(table => table.HasCheckConstraint(
+            user.ToTable("Users", table => table.HasCheckConstraint(
                 "CK_AspNetUsers_ActiveLifecycle",
                 "([IsActive] = CAST(1 AS bit) AND [DeactivatedAtUtc] IS NULL) OR " +
                 "([IsActive] = CAST(0 AS bit) AND [DeactivatedAtUtc] IS NOT NULL)"));

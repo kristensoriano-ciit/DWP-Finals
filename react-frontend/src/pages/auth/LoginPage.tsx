@@ -43,7 +43,8 @@ export function LoginPage() {
     try {
       const auth = await login({ email: email.trim(), password })
       session.signIn(auth)
-      navigate(safeReturnPath(state?.returnPath, auth.user.role), { replace: true })
+      const defaultPath = auth.user.role === 'Admin' ? '/admin' : '/dashboard/retrospectives'
+      navigate(state?.returnPath ? safeReturnPath(state.returnPath, auth.user.role) : defaultPath, { replace: true })
     } catch (error) {
       if (error instanceof ApiError) {
         setErrors(error.fieldErrors)

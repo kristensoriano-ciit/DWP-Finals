@@ -867,6 +867,37 @@ input[aria-invalid='true'] {
   border-top: 3px solid var(--ink);
 }
 
+.owner-table-scroll {
+  overflow-x: auto;
+  border-top: 3px solid var(--ink);
+}
+
+.owner-table {
+  width: 100%;
+  min-width: 820px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.owner-table th,
+.owner-table td {
+  padding: 18px 14px;
+  border-bottom: 1px solid var(--line);
+  vertical-align: top;
+}
+
+.owner-table thead th {
+  color: var(--muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.owner-table tbody th {
+  font-family: var(--heading);
+  font-size: 1.2rem;
+}
+
 .owner-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
@@ -886,6 +917,17 @@ input[aria-invalid='true'] {
 .owner-row p {
   margin: 0;
   color: var(--muted);
+}
+
+.owner-row .owner-row__reason {
+  margin-top: 12px;
+  color: var(--ink);
+}
+
+.page-heading__links {
+  display: flex;
+  align-items: center;
+  gap: 20px;
 }
 
 .owner-row__game {

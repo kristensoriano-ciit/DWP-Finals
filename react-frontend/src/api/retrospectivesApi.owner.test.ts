@@ -32,4 +32,10 @@ describe('owner retrospective requests', () => {
     expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toMatchObject({ rowVersion: 'v2', unpublishedReason: 'Needs work' })
     expect(fetchMock.mock.calls[3][1].headers.get('If-Match')).toBe('v3')
   })
+
+  it('rejects an unknown owner status from the API', async () => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ ...retrospective, status: 'deleted' })))
+
+    await expect(getOwnRetrospective('retro-1', 'token')).rejects.toThrow('unexpected response')
+  })
 })

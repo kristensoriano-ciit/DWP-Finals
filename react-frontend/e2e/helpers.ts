@@ -10,6 +10,7 @@ export const routes = {
   account: '/account',
   password: '/account/password',
   authorRetrospectives: '/dashboard/retrospectives',
+  authorUnpublished: '/dashboard/retrospectives/unpublished',
   newRetrospective: '/dashboard/retrospectives/new',
   admin: '/admin',
   adminGames: '/admin/games',

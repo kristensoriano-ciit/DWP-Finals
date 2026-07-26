@@ -1,4 +1,4 @@
-import type { AuthResponse, Game, PagedResponse, PublishedRetrospective, Retrospective, User } from './types'
+import type { AuthResponse, Game, PagedResponse, PublishedRetrospective, Retrospective, RetrospectiveStatus, User } from './types'
 
 type RecordValue = Record<string, unknown>
 
@@ -7,6 +7,10 @@ function isRecord(value: unknown): value is RecordValue {
 }
 
 function isNullableString(value: unknown) { return typeof value === 'string' || value === null }
+
+function isRetrospectiveStatus(value: unknown): value is RetrospectiveStatus {
+  return value === 'draft' || value === 'review' || value === 'published' || value === 'unpublished' || value === 'archived'
+}
 
 export function isEmptyResponse(value: unknown): value is undefined { return value === undefined }
 
@@ -41,7 +45,7 @@ export function isPublishedRetrospective(value: unknown): value is PublishedRetr
 export function isRetrospective(value: unknown): value is Retrospective {
   if (!isRetrospectiveContent(value)) return false
   const record = value as unknown as RecordValue
-  return typeof record.status === 'string' && isNullableString(record.unpublishedReason) && typeof record.createdAtUtc === 'string'
+  return isRetrospectiveStatus(record.status) && isNullableString(record.unpublishedReason) && typeof record.createdAtUtc === 'string'
     && typeof record.updatedAtUtc === 'string' && isNullableString(record.publishedAtUtc) && isNullableString(record.unpublishedAtUtc)
     && isNullableString(record.archivedAtUtc) && typeof record.rowVersion === 'string'
 }

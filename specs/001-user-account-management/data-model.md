@@ -3,6 +3,8 @@
 ## ApplicationUser
 
 Extends the identity user type with application-owned profile and lifecycle fields.
+The entity maps to the ERD's physical `Users` table. ASP.NET Core Identity still manages password
+hashes and supporting role, claim, login, and token tables.
 
 | Field | Type | Required | Rules |
 |-------|------|----------|-------|

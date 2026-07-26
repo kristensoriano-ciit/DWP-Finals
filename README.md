@@ -12,6 +12,7 @@ The repository contains an ASP.NET Core 8 API in `dotnet-backend/dotnet-backend/
 ## Documentation
 
 - [Full-stack architecture](docs/fullstack-architecture.md)
+- [ERD to physical schema mapping](docs/erd-schema-mapping.md)
 - [Complete local setup and validation](specs/004-fullstack-retrospective-portal/quickstart.md)
 - [Frontend setup, scripts, and routes](react-frontend/README.md)
 - [Frontend route contract](specs/004-fullstack-retrospective-portal/contracts/frontend-routes.md)
@@ -122,8 +123,10 @@ short-lived artifact; runtime secrets are never committed or uploaded.
 
 Public routes are `/`, `/games`, `/games/:gameId`, `/retrospectives`,
 `/retrospectives/:retrospectiveId`, `/login`, and `/register`. Authenticated account routes are
-`/account` and `/account/password`. Authors use `/dashboard/retrospectives` and its new/edit routes.
-Admins use `/admin`, `/admin/games` and its new/edit routes, and `/admin/users`.
+`/account` and `/account/password`. Authors use `/dashboard/retrospectives`, its dedicated
+`/dashboard/retrospectives/unpublished` reason view, and its new/edit routes. Admins use `/admin`,
+`/admin/games` and its new/edit routes, and `/admin/users`. Both role landing pages display New
+Releases, Upcoming Releases, and Best Retrospectives while keeping management permissions separate.
 
 Route guards improve navigation but the API remains the authorization boundary. A production static
 host must fall back to `index.html` for direct SPA route entry. See the
