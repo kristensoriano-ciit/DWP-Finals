@@ -32,7 +32,8 @@ async function register(page: Page, identity: typeof fixtureIdentities.cleanAuth
   await page.getByLabel('Email').fill(identity.email)
   await page.getByLabel('Password').fill(password())
   await page.getByRole('button', { name: 'Create account' }).click()
-  await expect(page.getByRole('status')).toContainText('Account created')
+  await expect(page).toHaveURL(routes.authorRetrospectives)
+  await expect(page.getByRole('button', { name: 'Sign out' })).toBeVisible()
 }
 
 async function fillGame(page: Page, title: string, releaseDate: string) {
@@ -40,8 +41,13 @@ async function fillGame(page: Page, title: string, releaseDate: string) {
   await form.getByLabel('Title').fill(title)
   await form.getByLabel('Description').fill(`${title} deterministic browser fixture.`)
   await form.getByLabel('Release date').fill(releaseDate)
-  await form.getByRole('button', { name: /Create game|Save changes/ }).click()
-  await expect(page.getByRole('status')).toContainText(/Game created|Game updated/)
+  const [response] = await Promise.all([
+    page.waitForResponse((candidate) => candidate.url().endsWith('/api/games') && candidate.request().method() === 'POST'),
+    form.getByRole('button', { name: 'Create game' }).click(),
+  ])
+  expect(response.ok(), `Create game returned HTTP ${response.status()}`).toBe(true)
+  await expect(page).toHaveURL(routes.adminGames)
+  await expect(page.getByRole('heading', { name: 'Games', exact: true })).toBeVisible()
 }
 
 async function createGame(page: Page, title: string, releaseDate: string) {
@@ -89,7 +95,6 @@ test('@clean-setup builds the required dataset from an empty migrated database',
   await signOut(page)
 
   await register(page, fixtureIdentities.cleanAuthor)
-  await signIn(page, fixtureIdentities.cleanAuthor.email)
   await createRetrospective(page, { game: 'Clean Alpha', title: 'Clean Draft', rating: 3, status: 'draft' })
   await createRetrospective(page, { game: 'Clean Beta', title: 'Clean Review', rating: 5, status: 'review' })
   const publishedId = await createRetrospective(page, { game: 'Clean Alpha', title: 'Clean Published High', rating: 9, status: 'published' })
@@ -156,6 +161,7 @@ test('@account registers, returns to a protected route, restores, updates, chang
   const identity = fixtureIdentities.registeredAuthor
   const changedPassword = `${password()}-changed`
   await register(page, identity)
+  await signOut(page)
   await page.goto(routes.account)
   await expect(page).toHaveURL(routes.login)
   await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible()
